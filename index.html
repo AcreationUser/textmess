@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Writer</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDEyMCAxMjAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiByeD0iMjYiIGZpbGw9IiMxMzBmMTciLz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSg2MCw2MCkiPjxsaW5lIHgxPSIwIiB5MT0iLTMwIiB4Mj0iMCIgeTI9IjMwIiBzdHJva2U9IiMyZTIyMzgiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iLTMwIiB5MT0iMCIgeDI9IjMwIiB5Mj0iMCIgc3Ryb2tlPSIjMmUyMjM4IiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGxpbmUgeDE9Ii0yMSIgeTE9Ii0yMSIgeDI9IjIxIiB5Mj0iMjEiIHN0cm9rZT0iIzJlMjIzOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48bGluZSB4MT0iMjEiIHkxPSItMjEiIHgyPSItMjEiIHkyPSIyMSIgc3Ryb2tlPSIjMmUyMjM4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjAiIGN5PSItMzAiIHI9IjUiIGZpbGw9IiM3YTQ0NzIiLz48Y2lyY2xlIGN4PSIwIiBjeT0iMzAiIHI9IjUiIGZpbGw9IiM3YTQ0NzIiLz48Y2lyY2xlIGN4PSItMzAiIGN5PSIwIiByPSI1IiBmaWxsPSIjN2E0NDcyIi8+PGNpcmNsZSBjeD0iMzAiIGN5PSIwIiByPSI1IiBmaWxsPSIjN2E0NDcyIi8+PGNpcmNsZSBjeD0iLTIxIiBjeT0iLTIxIiByPSIzLjUiIGZpbGw9IiNjODhlYzAiIG9wYWNpdHk9IjAuNTUiLz48Y2lyY2xlIGN4PSIyMSIgY3k9Ii0yMSIgcj0iMy41IiBmaWxsPSIjYzg4ZWMwIiBvcGFjaXR5PSIwLjU1Ii8+PGNpcmNsZSBjeD0iMjEiIGN5PSIyMSIgcj0iMy41IiBmaWxsPSIjYzg4ZWMwIiBvcGFjaXR5PSIwLjU1Ii8+PGNpcmNsZSBjeD0iLTIxIiBjeT0iMjEiIHI9IjMuNSIgZmlsbD0iI2M4OGVjMCIgb3BhY2l0eT0iMC41NSIvPjxjaXJjbGUgY3g9IjAiIGN5PSIwIiByPSI4IiBmaWxsPSIjYzg4ZWMwIi8+PGNpcmNsZSBjeD0iMCIgY3k9IjAiIHI9IjQiIGZpbGw9IiMxYTE0MjAiLz48L2c+PC9zdmc+">
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;1,7..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #130f17;
+    --bg2: #1a1420;
+    --bg3: #221929;
+    --border: #2e2238;
+    --text: #d4bfdc;
+    --text-dim: #7a5e8a;
+    --text-muted: #3a2846;
+    --accent: #c88ec0;
+    --accent-dim: #7a4472;
+    --danger: #8b4060;
+    --sidebar-w: 260px;
+    --input-h: 56px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-top: env(safe-area-inset-top, 0px);
+  }
+
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Literata', Georgia, serif; }
+
+  /* ── Layout ── */
+  #app { display: flex; height: 100%; padding-top: var(--safe-top); }
+
+  /* ── Sidebar ── */
+  #sidebar {
+    width: var(--sidebar-w);
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+    z-index: 100;
+    position: relative;
+  }
+  #sidebar.hidden { transform: translateX(calc(-1 * var(--sidebar-w))); position: absolute; top: 0; bottom: 0; left: 0; }
+
+  #sidebar-header {
+    padding: 16px 14px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #sidebar-title {
+    font-family: 'Literata', serif;
+    font-size: 18px;
+    font-style: italic;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    flex: 1;
+  }
+  #btn-new-file {
+    background: none; border: 1px solid var(--accent-dim); border-radius: 6px;
+    color: var(--accent); font-size: 18px; width: 30px; height: 30px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  #btn-new-file:hover { background: var(--bg3); }
+
+  #file-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .file-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-left: 2px solid transparent;
+    transition: background 0.12s, border-color 0.12s;
+    position: relative;
+  }
+  .file-item:hover { background: var(--bg3); }
+  .file-item.active { background: var(--bg3); border-left-color: var(--accent); }
+  .file-name {
+    font-size: 14px;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+  }
+  .file-item.active .file-name { color: var(--accent); }
+  .file-meta { font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .file-actions { display: none; gap: 4px; }
+  .file-item:hover .file-actions { display: flex; }
+  .file-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-dim); font-size: 13px; padding: 2px 4px;
+    border-radius: 3px; transition: color 0.12s, background 0.12s;
+  }
+  .file-btn:hover { color: var(--text); background: var(--border); }
+  .file-btn.del:hover { color: var(--danger); }
+
+  #empty-state {
+    padding: 24px 14px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── Main ── */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* ── Topbar ── */
+  #topbar {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+  #btn-toggle-sidebar {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 18px; padding: 4px; line-height: 1;
+    transition: color 0.12s;
+  }
+  #btn-toggle-sidebar:hover { color: var(--text); }
+  #current-file-name {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #current-file-name.has-file { color: var(--accent); }
+  #topbar-actions { display: flex; gap: 6px; }
+  .top-btn {
+    background: none; border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text-dim); font-size: 11px; padding: 4px 8px;
+    cursor: pointer; font-family: 'JetBrains Mono', monospace;
+    transition: all 0.12s; white-space: nowrap;
+  }
+  .top-btn:hover { border-color: var(--accent-dim); color: var(--accent); }
+  .top-btn.format-toggle { min-width: 38px; text-align: center; }
+  #save-indicator {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    transition: color 0.3s;
+  }
+  #save-indicator.saved { color: var(--accent-dim); }
+
+  #chat-spacer { flex: 1 1 auto; min-height: 20px; }
+
+  /* ── Chat area ── */
+  #chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  #no-file-msg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 16px;
+    text-align: center;
+    padding: 20px;
+    line-height: 1.7;
+  }
+  #no-file-msg .big { font-size: 32px; opacity: 0.3; }
+
+  .para-wrap {
+    display: flex;
+    justify-content: flex-end;
+    padding: 2px 0;
+  }
+  .para-line {
+    font-family: 'Literata', Georgia, serif;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 18px 18px 4px 18px;
+    padding: 10px 16px;
+    cursor: pointer;
+    max-width: 92%;
+    position: relative;
+    transition: border-color 0.15s;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .para-line:hover { border-color: var(--accent-dim); }
+  .para-line:hover .para-del { display: flex; }
+  .para-del {
+    display: none;
+    position: absolute;
+    left: -28px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 3px;
+    transition: color 0.12s;
+    align-items: center;
+    justify-content: center;
+  }
+  .para-del:hover { color: var(--danger); }
+  .para-line.editing {
+    border-color: var(--accent-dim);
+    outline: none;
+  }
+
+  /* ── Input bar ── */
+  #input-bar {
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    padding: 8px 10px;
+    padding-bottom: calc(8px + var(--safe-bottom));
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  #text-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    color: var(--text);
+    font-family: 'Literata', Georgia, serif;
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 9px 16px;
+    resize: none;
+    outline: none;
+    max-height: 120px;
+    overflow-y: auto;
+    transition: border-color 0.15s;
+    scrollbar-width: none;
+  }
+  #text-input::placeholder { color: var(--text-muted); font-style: italic; }
+  #text-input:focus { border-color: var(--accent-dim); }
+  #btn-send {
+    background: var(--accent-dim);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: var(--bg);
+    cursor: pointer;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #btn-send:hover { background: var(--accent); }
+  #btn-send:active { transform: scale(0.93); }
+  #btn-send:disabled { background: var(--border); color: var(--text-muted); cursor: default; }
+
+  /* ── Overlay (sidebar on mobile) ── */
+  #overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 99;
+    background: rgba(0,0,0,0.5);
+  }
+  #overlay.show { display: block; }
+
+  /* ── Modal ── */
+  #modal-bg {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.7);
+    align-items: center; justify-content: center;
+  }
+  #modal-bg.show { display: flex; }
+  #modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #modal-title { font-size: 16px; font-style: italic; color: var(--accent); }
+  #modal-input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    outline: none;
+  }
+  #modal-input:focus { border-color: var(--accent-dim); }
+  #modal-format {
+    display: flex; gap: 8px;
+  }
+  .fmt-btn {
+    flex: 1; background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; padding: 7px; cursor: pointer; transition: all 0.12s;
+  }
+  .fmt-btn.active { border-color: var(--accent-dim); color: var(--accent); background: var(--bg); }
+  #modal-actions { display: flex; gap: 8px; }
+  .modal-btn {
+    flex: 1; padding: 9px; border-radius: 8px; border: none;
+    cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    transition: all 0.12s;
+  }
+  .modal-btn.cancel { background: var(--bg3); color: var(--text-dim); border: 1px solid var(--border); }
+  .modal-btn.cancel:hover { color: var(--text); }
+  .modal-btn.confirm { background: var(--accent-dim); color: var(--bg); }
+  .modal-btn.confirm:hover { background: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="overlay"></div>
+
+<div id="app">
+  <!-- Sidebar -->
+  <div id="sidebar" class="hidden">
+    <div id="sidebar-header">
+      <span id="sidebar-title">Файлы</span>
+      <button id="btn-new-file" title="Новый файл">+</button>
+    </div>
+    <div id="file-list">
+      <div id="empty-state">Нет файлов.<br>Нажми + чтобы создать.</div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <div id="topbar">
+      <button id="btn-toggle-sidebar">☰</button>
+      <span id="current-file-name">— нет файла —</span>
+      <div id="topbar-actions">
+        <span id="save-indicator">●</span>
+        <button class="top-btn format-toggle" id="btn-format" title="Формат файла">txt</button>
+        <button class="top-btn" id="btn-export" title="Скачать файл">↓</button>
+      </div>
+    </div>
+
+    <div id="chat-area">
+      <div id="no-file-msg">
+        <span class="big">✦</span>
+        Открой или создай файл,<br>чтобы начать писать.
+      </div>
+    </div>
+
+    <div id="input-bar">
+      <textarea id="text-input" placeholder="Новый абзац…" rows="1" disabled></textarea>
+      <button id="btn-send" disabled>↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: new / rename file -->
+<div id="modal-bg">
+  <div id="modal">
+    <div id="modal-title">Новый файл</div>
+    <input id="modal-input" type="text" placeholder="название файла" maxlength="80">
+    <div id="modal-format">
+      <button class="fmt-btn active" data-fmt="txt">.txt</button>
+      <button class="fmt-btn" data-fmt="md">.md</button>
+    </div>
+    <div id="modal-actions">
+      <button class="modal-btn cancel" id="modal-cancel">Отмена</button>
+      <button class="modal-btn confirm" id="modal-confirm">Создать</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────
+// DB
+// ──────────────────────────────────────────────────────
+let db;
+const DB_NAME = 'writer_db', DB_VERSION = 1;
+
+function initDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('files')) {
+        const store = d.createObjectStore('files', { keyPath: 'id', autoIncrement: true });
+        store.createIndex('updatedAt', 'updatedAt');
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; res(); };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbGetAll() {
+  return new Promise((res, rej) => {
+    const tx = db.transaction('files', 'readonly');
+    const req = tx.objectStore('files').getAll();
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbSave(file) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction('files', 'readwrite');
+    const req = tx.objectStore('files').put(file);
+    req.onsuccess = () => { file.id = file.id || req.result; res(file); };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbDelete(id) {
+  return new Promise((res, rej) => {
+    const tx = db.transaction('files', 'readwrite');
+    tx.objectStore('files').delete(id);
+    tx.oncomplete = res;
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
+// ──────────────────────────────────────────────────────
+// State
+// ──────────────────────────────────────────────────────
+let files = [];
+let currentFileId = null;
+let sidebarOpen = false;
+let saveTimer = null;
+let modalMode = 'new'; // 'new' | 'rename'
+let renameTargetId = null;
+let modalFormat = 'txt';
+
+// ──────────────────────────────────────────────────────
+// DOM refs
+// ──────────────────────────────────────────────────────
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+const fileList = document.getElementById('file-list');
+const emptyState = document.getElementById('empty-state');
+const chatArea = document.getElementById('chat-area');
+const noFileMsg = document.getElementById('no-file-msg');
+const textInput = document.getElementById('text-input');
+const btnSend = document.getElementById('btn-send');
+const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const btnNewFile = document.getElementById('btn-new-file');
+const currentFileName = document.getElementById('current-file-name');
+const saveIndicator = document.getElementById('save-indicator');
+const btnFormat = document.getElementById('btn-format');
+const btnExport = document.getElementById('btn-export');
+const modalBg = document.getElementById('modal-bg');
+const modalTitle = document.getElementById('modal-title');
+const modalInput = document.getElementById('modal-input');
+const modalConfirm = document.getElementById('modal-confirm');
+const modalCancel = document.getElementById('modal-cancel');
+
+// ──────────────────────────────────────────────────────
+// Sidebar
+// ──────────────────────────────────────────────────────
+function toggleSidebar(force) {
+  sidebarOpen = force !== undefined ? force : !sidebarOpen;
+  if (sidebarOpen) {
+    sidebar.classList.remove('hidden');
+    overlay.classList.add('show');
+  } else {
+    sidebar.classList.add('hidden');
+    overlay.classList.remove('show');
+  }
+}
+btnToggleSidebar.addEventListener('click', () => toggleSidebar());
+overlay.addEventListener('click', () => toggleSidebar(false));
+
+// ──────────────────────────────────────────────────────
+// File list rendering
+// ──────────────────────────────────────────────────────
+function renderFileList() {
+  fileList.innerHTML = '';
+  if (!files.length) {
+    fileList.appendChild(emptyState);
+    return;
+  }
+  const sorted = [...files].sort((a, b) => b.updatedAt - a.updatedAt);
+  sorted.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'file-item' + (f.id === currentFileId ? ' active' : '');
+    item.dataset.id = f.id;
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'file-name';
+    nameSpan.textContent = f.name + '.' + f.format;
+
+    const paraCount = document.createElement('span');
+    paraCount.className = 'file-meta';
+    paraCount.textContent = f.paragraphs.length + ' ¶';
+
+    const actions = document.createElement('div');
+    actions.className = 'file-actions';
+
+    const renBtn = document.createElement('button');
+    renBtn.className = 'file-btn';
+    renBtn.textContent = '✎';
+    renBtn.title = 'Переименовать';
+    renBtn.addEventListener('click', e => { e.stopPropagation(); openRenameModal(f.id); });
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'file-btn del';
+    delBtn.textContent = '✕';
+    delBtn.title = 'Удалить';
+    delBtn.addEventListener('click', e => { e.stopPropagation(); deleteFile(f.id); });
+
+    actions.appendChild(renBtn);
+    actions.appendChild(delBtn);
+
+    item.appendChild(nameSpan);
+    item.appendChild(paraCount);
+    item.appendChild(actions);
+
+    item.addEventListener('click', () => { openFile(f.id); toggleSidebar(false); });
+    fileList.appendChild(item);
+  });
+}
+
+// ──────────────────────────────────────────────────────
+// Open file
+// ──────────────────────────────────────────────────────
+function openFile(id) {
+  currentFileId = id;
+  const f = files.find(x => x.id === id);
+  if (!f) return;
+  currentFileName.textContent = f.name + '.' + f.format;
+  currentFileName.classList.add('has-file');
+  btnFormat.textContent = f.format;
+  textInput.disabled = false;
+  btnSend.disabled = false;
+  textInput.placeholder = 'Новый абзац…';
+  renderChat(f);
+  renderFileList();
+}
+
+// ──────────────────────────────────────────────────────
+// Chat rendering
+// ──────────────────────────────────────────────────────
+function renderChat(f) {
+  chatArea.innerHTML = '';
+  const spacer = document.createElement('div');
+  spacer.id = 'chat-spacer';
+  chatArea.appendChild(spacer);
+  if (!f || !f.paragraphs.length) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'color:var(--text-muted);font-style:italic;font-size:14px;padding:20px 6px;';
+    hint.textContent = 'Пусто. Напиши первый абзац.';
+    chatArea.appendChild(hint);
+    return;
+  }
+  f.paragraphs.forEach((p, i) => {
+    chatArea.appendChild(makeParaEl(p, i));
+  });
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function makeParaEl(text, index) {
+  const wrap = document.createElement('div');
+  wrap.className = 'para-wrap';
+
+  const el = document.createElement('div');
+  el.className = 'para-line';
+  el.dataset.index = index;
+  el.textContent = text;
+
+  // tap to edit
+  let tapTimer = null;
+  el.addEventListener('click', e => {
+    if (e.target.classList.contains('para-del')) return;
+    clearTimeout(tapTimer);
+    tapTimer = setTimeout(() => startEditPara(el, index), 600);
+  });
+
+  const del = document.createElement('button');
+  del.className = 'para-del';
+  del.textContent = '✕';
+  del.title = 'Удалить';
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    deleteParagraph(index);
+  });
+  el.appendChild(del);
+  wrap.appendChild(el);
+  return wrap;
+}
+
+function startEditPara(el, index) {
+  const f = files.find(x => x.id === currentFileId);
+  if (!f) return;
+  const original = f.paragraphs[index];
+
+  el.contentEditable = 'true';
+  el.classList.add('editing');
+  el.focus();
+
+  const sel = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  function finish() {
+    el.contentEditable = 'false';
+    el.classList.remove('editing');
+    // remove del button text from content
+    const newText = el.innerText.replace(/✕\s*$/, '').trim();
+    if (newText === '') {
+      deleteParagraph(index);
+    } else {
+      f.paragraphs[index] = newText;
+      el.textContent = newText;
+      el.appendChild(Object.assign(document.createElement('button'), {
+        className: 'para-del', textContent: '✕', title: 'Удалить',
+        onclick: e => { e.stopPropagation(); deleteParagraph(index); }
+      }));
+      scheduleSave(f);
+    }
+    el.removeEventListener('blur', finish);
+    el.removeEventListener('keydown', onKey);
+  }
+
+  function onKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finish(); }
+    if (e.key === 'Escape') { el.textContent = original; el.appendChild(Object.assign(document.createElement('button'), { className:'para-del',textContent:'✕',onclick: ev=>{ev.stopPropagation();deleteParagraph(index);} })); el.contentEditable='false'; el.classList.remove('editing'); }
+  }
+
+  el.addEventListener('blur', finish);
+  el.addEventListener('keydown', onKey);
+}
+
+function deleteParagraph(index) {
+  const f = files.find(x => x.id === currentFileId);
+  if (!f) return;
+  f.paragraphs.splice(index, 1);
+  renderChat(f);
+  scheduleSave(f);
+}
+
+// ──────────────────────────────────────────────────────
+// Add paragraph
+// ──────────────────────────────────────────────────────
+function sendParagraph() {
+  const text = textInput.value.trim();
+  if (!text || !currentFileId) return;
+  const f = files.find(x => x.id === currentFileId);
+  if (!f) return;
+  f.paragraphs.push(text);
+  textInput.value = '';
+  autoResize();
+  renderChat(f);
+  scheduleSave(f);
+  textInput.focus();
+}
+
+btnSend.addEventListener('click', sendParagraph);
+// Enter = новая строка, отправка только кнопкой
+textInput.addEventListener('input', autoResize);
+
+function autoResize() {
+  textInput.style.height = 'auto';
+  textInput.style.height = Math.min(textInput.scrollHeight, 120) + 'px';
+}
+
+// ──────────────────────────────────────────────────────
+// Save
+// ──────────────────────────────────────────────────────
+function scheduleSave(f) {
+  f.updatedAt = Date.now();
+  saveIndicator.textContent = '●';
+  saveIndicator.classList.remove('saved');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveFile(f), 600);
+}
+
+async function saveFile(f) {
+  try {
+    await dbSave(f);
+    const idx = files.findIndex(x => x.id === f.id);
+    if (idx !== -1) files[idx] = f;
+    saveIndicator.textContent = '✓';
+    saveIndicator.classList.add('saved');
+    renderFileList();
+  } catch(e) { console.error(e); }
+}
+
+// ──────────────────────────────────────────────────────
+// Format toggle
+// ──────────────────────────────────────────────────────
+btnFormat.addEventListener('click', () => {
+  const f = files.find(x => x.id === currentFileId);
+  if (!f) return;
+  f.format = f.format === 'txt' ? 'md' : 'txt';
+  btnFormat.textContent = f.format;
+  currentFileName.textContent = f.name + '.' + f.format;
+  scheduleSave(f);
+});
+
+// ──────────────────────────────────────────────────────
+// Export
+// ──────────────────────────────────────────────────────
+btnExport.addEventListener('click', () => {
+  const f = files.find(x => x.id === currentFileId);
+  if (!f) return;
+  const content = f.paragraphs.join('\n\n');
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = f.name + '.' + f.format;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ──────────────────────────────────────────────────────
+// Delete file
+// ──────────────────────────────────────────────────────
+async function deleteFile(id) {
+  if (!confirm('Удалить файл?')) return;
+  await dbDelete(id);
+  files = files.filter(x => x.id !== id);
+  if (currentFileId === id) {
+    currentFileId = null;
+    currentFileName.textContent = '— нет файла —';
+    currentFileName.classList.remove('has-file');
+    chatArea.innerHTML = '';
+    chatArea.appendChild(noFileMsg);
+    textInput.disabled = true;
+    btnSend.disabled = true;
+    btnFormat.textContent = 'txt';
+  }
+  renderFileList();
+}
+
+// ──────────────────────────────────────────────────────
+// Modal
+// ──────────────────────────────────────────────────────
+function openNewModal() {
+  modalMode = 'new';
+  modalTitle.textContent = 'Новый файл';
+  modalInput.value = '';
+  modalConfirm.textContent = 'Создать';
+  modalFormat = 'txt';
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.toggle('active', b.dataset.fmt === 'txt'));
+  document.getElementById('modal-format').style.display = 'flex';
+  modalBg.classList.add('show');
+  setTimeout(() => modalInput.focus(), 50);
+}
+
+function openRenameModal(id) {
+  modalMode = 'rename';
+  renameTargetId = id;
+  const f = files.find(x => x.id === id);
+  modalTitle.textContent = 'Переименовать';
+  modalInput.value = f ? f.name : '';
+  modalConfirm.textContent = 'Сохранить';
+  document.getElementById('modal-format').style.display = 'none';
+  modalBg.classList.add('show');
+  setTimeout(() => { modalInput.focus(); modalInput.select(); }, 50);
+}
+
+function closeModal() { modalBg.classList.remove('show'); }
+
+document.querySelectorAll('.fmt-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    modalFormat = b.dataset.fmt;
+    document.querySelectorAll('.fmt-btn').forEach(x => x.classList.toggle('active', x.dataset.fmt === modalFormat));
+  });
+});
+
+btnNewFile.addEventListener('click', openNewModal);
+modalCancel.addEventListener('click', closeModal);
+modalBg.addEventListener('click', e => { if (e.target === modalBg) closeModal(); });
+modalInput.addEventListener('keydown', e => { if (e.key === 'Enter') modalConfirm.click(); });
+
+modalConfirm.addEventListener('click', async () => {
+  const name = modalInput.value.trim();
+  if (!name) return;
+
+  if (modalMode === 'new') {
+    const newFile = { name, format: modalFormat, paragraphs: [], createdAt: Date.now(), updatedAt: Date.now() };
+    const saved = await dbSave(newFile);
+    files.push(saved);
+    closeModal();
+    renderFileList();
+    openFile(saved.id);
+    toggleSidebar(false);
+  } else {
+    const f = files.find(x => x.id === renameTargetId);
+    if (f) {
+      f.name = name;
+      f.updatedAt = Date.now();
+      await dbSave(f);
+      if (currentFileId === f.id) {
+        currentFileName.textContent = f.name + '.' + f.format;
+      }
+      renderFileList();
+    }
+    closeModal();
+  }
+});
+
+// ──────────────────────────────────────────────────────
+// Init
+// ──────────────────────────────────────────────────────
+async function init() {
+  await initDB();
+  files = await dbGetAll();
+  renderFileList();
+  if (files.length) {
+    const last = [...files].sort((a,b) => b.updatedAt - a.updatedAt)[0];
+    openFile(last.id);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
