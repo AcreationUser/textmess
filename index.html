@@ -750,19 +750,30 @@ btnFormat.addEventListener('click', () => {
 // ──────────────────────────────────────────────────────
 // Export
 // ──────────────────────────────────────────────────────
-btnExport.addEventListener('click', () => {
+btnExport.addEventListener('click', async () => {
   const f = files.find(x => x.id === currentFileId);
   if (!f) return;
   const text = f.paragraphs.join('\n\n');
-  const b64 = btoa(unescape(encodeURIComponent(text)));
-  const uri = 'data:text/plain;charset=utf-8;base64,' + b64;
-  const a = document.createElement('a');
-  a.href = uri;
-  a.download = f.name + '.' + f.format;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const filename = f.name + '.' + f.format;
+  if (navigator.share) {
+    try {
+      const file = new File([text], filename, { type: 'text/plain' });
+      await navigator.share({ files: [file], title: filename });
+    } catch(e) {
+      if (e.name !== 'AbortError') fallbackCopy(text, filename);
+    }
+  } else {
+    fallbackCopy(text, filename);
+  }
 });
+
+function fallbackCopy(text, filename) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Файл "' + filename + '" скопирован в буфер обмена.');
+  }).catch(() => {
+    alert('Экспорт недоступен. Скопируйте текст вручную.');
+  });
+}
 
 // ──────────────────────────────────────────────────────
 // Delete file
