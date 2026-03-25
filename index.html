@@ -251,14 +251,16 @@
   }
   .para-del:hover { color: var(--danger); }
   .para-line.editing {
-    border-color: var(--accent-dim);
+    border-color: var(--accent);
     outline: none;
+    opacity: 0.8;
   }
 
   /* ── Input bar ── */
   #input-bar {
     border-top: 1px solid var(--border);
     background: var(--bg2);
+    transition: border-color 0.2s;
     padding: 8px 10px;
     padding-bottom: calc(8px + var(--safe-bottom));
     display: flex;
@@ -423,75 +425,40 @@
 
 <script>
 // ──────────────────────────────────────────────────────
-// Storage (IndexedDB → localStorage fallback)
+// Storage — localStorage only (надёжно в WebView)
 // ──────────────────────────────────────────────────────
-let db = null;
-const DB_NAME = 'writer_db', DB_VERSION = 1;
 const LS_KEY = 'writer_files';
-let useLS = false;
+let nextId = null;
 
 function lsLoad() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
 }
 function lsSave(arr) {
-  localStorage.setItem(LS_KEY, JSON.stringify(arr));
+  try { localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch(e) { console.error('lsSave failed', e); throw e; }
+}
+function getNextId(arr) {
+  if (nextId === null) nextId = arr.reduce((m, f) => Math.max(m, f.id || 0), 0) + 1;
+  return nextId++;
 }
 
-function initDB() {
-  return new Promise((res) => {
-    if (!window.indexedDB) { useLS = true; res(); return; }
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('files')) {
-        d.createObjectStore('files', { keyPath: 'id', autoIncrement: true });
-      }
-    };
-    req.onsuccess = e => { db = e.target.result; useLS = false; res(); };
-    req.onerror = () => { useLS = true; res(); };
-    req.onblocked = () => { useLS = true; res(); };
-    setTimeout(() => { if (!db) { useLS = true; res(); } }, 2000);
-  });
-}
+function initDB() { return Promise.resolve(); }
 
 function dbGetAll() {
-  if (useLS || !db) return Promise.resolve(lsLoad());
-  return new Promise((res, rej) => {
-    const tx = db.transaction('files', 'readonly');
-    const req = tx.objectStore('files').getAll();
-    req.onsuccess = () => res(req.result);
-    req.onerror = () => rej(req.error);
-  });
+  return Promise.resolve(lsLoad());
 }
 
 function dbSave(file) {
-  if (useLS || !db) {
-    const arr = lsLoad();
-    if (!file.id) file.id = Date.now() + Math.random();
-    const idx = arr.findIndex(x => x.id === file.id);
-    if (idx !== -1) arr[idx] = file; else arr.push(file);
-    lsSave(arr);
-    return Promise.resolve(file);
-  }
-  return new Promise((res, rej) => {
-    const tx = db.transaction('files', 'readwrite');
-    const req = tx.objectStore('files').put(file);
-    req.onsuccess = () => { file.id = file.id || req.result; res(file); };
-    req.onerror = () => rej(req.error);
-  });
+  const arr = lsLoad();
+  if (!file.id) file.id = getNextId(arr);
+  const idx = arr.findIndex(x => x.id === file.id);
+  if (idx !== -1) arr[idx] = file; else arr.push(file);
+  lsSave(arr);
+  return Promise.resolve(file);
 }
 
 function dbDelete(id) {
-  if (useLS || !db) {
-    lsSave(lsLoad().filter(x => x.id !== id));
-    return Promise.resolve();
-  }
-  return new Promise((res, rej) => {
-    const tx = db.transaction('files', 'readwrite');
-    tx.objectStore('files').delete(id);
-    tx.oncomplete = res;
-    tx.onerror = () => rej(tx.error);
-  });
+  lsSave(lsLoad().filter(x => x.id !== id));
+  return Promise.resolve();
 }
 
 // ──────────────────────────────────────────────────────
@@ -719,6 +686,11 @@ function deleteParagraph(index) {
 // Add paragraph
 // ──────────────────────────────────────────────────────
 function sendParagraph() {
+  if (textInput.dataset.editIndex !== undefined) {
+    finishEdit();
+    textInput.focus();
+    return;
+  }
   const text = textInput.value.trim();
   if (!text || !currentFileId) return;
   const f = files.find(x => x.id === currentFileId);
@@ -732,6 +704,12 @@ function sendParagraph() {
 }
 
 btnSend.addEventListener('click', sendParagraph);
+textInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && textInput.dataset.editIndex !== undefined) {
+    e.preventDefault();
+    cancelEdit();
+  }
+});
 // Enter = новая строка, отправка только кнопкой
 textInput.addEventListener('input', autoResize);
 
