@@ -136,8 +136,8 @@
 
   /* ── Topbar ── */
   #topbar {
-    padding: 6px 12px;
-    padding-top: var(--safe-top);
+    padding: 10px 12px;
+    padding-top: calc(10px + var(--safe-top));
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -423,27 +423,39 @@
 
 <script>
 // ──────────────────────────────────────────────────────
-// DB
+// Storage (IndexedDB → localStorage fallback)
 // ──────────────────────────────────────────────────────
-let db;
+let db = null;
 const DB_NAME = 'writer_db', DB_VERSION = 1;
+const LS_KEY = 'writer_files';
+let useLS = false;
+
+function lsLoad() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+}
+function lsSave(arr) {
+  localStorage.setItem(LS_KEY, JSON.stringify(arr));
+}
 
 function initDB() {
-  return new Promise((res, rej) => {
+  return new Promise((res) => {
+    if (!window.indexedDB) { useLS = true; res(); return; }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = e => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains('files')) {
-        const store = d.createObjectStore('files', { keyPath: 'id', autoIncrement: true });
-        store.createIndex('updatedAt', 'updatedAt');
+        d.createObjectStore('files', { keyPath: 'id', autoIncrement: true });
       }
     };
-    req.onsuccess = e => { db = e.target.result; res(); };
-    req.onerror = () => rej(req.error);
+    req.onsuccess = e => { db = e.target.result; useLS = false; res(); };
+    req.onerror = () => { useLS = true; res(); };
+    req.onblocked = () => { useLS = true; res(); };
+    setTimeout(() => { if (!db) { useLS = true; res(); } }, 2000);
   });
 }
 
 function dbGetAll() {
+  if (useLS) return Promise.resolve(lsLoad());
   return new Promise((res, rej) => {
     const tx = db.transaction('files', 'readonly');
     const req = tx.objectStore('files').getAll();
@@ -453,6 +465,14 @@ function dbGetAll() {
 }
 
 function dbSave(file) {
+  if (useLS) {
+    const arr = lsLoad();
+    if (!file.id) file.id = Date.now() + Math.random();
+    const idx = arr.findIndex(x => x.id === file.id);
+    if (idx !== -1) arr[idx] = file; else arr.push(file);
+    lsSave(arr);
+    return Promise.resolve(file);
+  }
   return new Promise((res, rej) => {
     const tx = db.transaction('files', 'readwrite');
     const req = tx.objectStore('files').put(file);
@@ -462,6 +482,10 @@ function dbSave(file) {
 }
 
 function dbDelete(id) {
+  if (useLS) {
+    lsSave(lsLoad().filter(x => x.id !== id));
+    return Promise.resolve();
+  }
   return new Promise((res, rej) => {
     const tx = db.transaction('files', 'readwrite');
     tx.objectStore('files').delete(id);
@@ -942,12 +966,19 @@ importInput.addEventListener('change', async () => {
 // Init
 // ──────────────────────────────────────────────────────
 async function init() {
-  await initDB();
-  files = await dbGetAll();
-  renderFileList();
-  if (files.length) {
-    const last = [...files].sort((a,b) => b.updatedAt - a.updatedAt)[0];
-    openFile(last.id);
+  try {
+    await initDB();
+    files = await dbGetAll();
+    renderFileList();
+    if (files.length) {
+      const last = [...files].sort((a,b) => b.updatedAt - a.updatedAt)[0];
+      openFile(last.id);
+    }
+  } catch(e) {
+    console.error('Init failed:', e);
+    saveIndicator.textContent = '✕';
+    saveIndicator.classList.add('error');
+    saveIndicator.title = 'Ошибка БД: ' + (e.message || e);
   }
 }
 
