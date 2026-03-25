@@ -177,6 +177,7 @@
     transition: color 0.3s;
   }
   #save-indicator.saved { color: var(--accent-dim); }
+  #save-indicator.error { color: #8b4040; }
 
   #chat-spacer { flex: 1 1 auto; min-height: 20px; }
 
@@ -384,6 +385,8 @@
       <div id="topbar-actions">
         <span id="save-indicator">●</span>
         <button class="top-btn format-toggle" id="btn-format" title="Формат файла">txt</button>
+        <button class="top-btn" id="btn-backup" title="Бэкап всех файлов">⊞</button>
+        <button class="top-btn" id="btn-import-backup" title="Восстановить из бэкапа">⊟</button>
         <button class="top-btn" id="btn-export" title="Скачать файл">↓</button>
       </div>
     </div>
@@ -730,9 +733,17 @@ async function saveFile(f) {
     const idx = files.findIndex(x => x.id === f.id);
     if (idx !== -1) files[idx] = f;
     saveIndicator.textContent = '✓';
+    saveIndicator.classList.remove('error');
     saveIndicator.classList.add('saved');
+    saveIndicator.title = '';
     renderFileList();
-  } catch(e) { console.error(e); }
+  } catch(e) {
+    console.error(e);
+    saveIndicator.textContent = '✕';
+    saveIndicator.classList.remove('saved');
+    saveIndicator.classList.add('error');
+    saveIndicator.title = 'Ошибка сохранения: ' + (e.message || e);
+  }
 }
 
 // ──────────────────────────────────────────────────────
@@ -834,7 +845,16 @@ modalConfirm.addEventListener('click', async () => {
   if (!name) return;
 
   if (modalMode === 'new') {
-    const newFile = { name, format: modalFormat, paragraphs: [], createdAt: Date.now(), updatedAt: Date.now() };
+    const fmt = modalFormat;
+    const duplicate = files.find(x => x.name === name && x.format === fmt);
+    if (duplicate) {
+      modalInput.style.borderColor = 'var(--danger)';
+      modalInput.title = 'Файл с таким именем уже существует';
+      modalInput.focus();
+      return;
+    }
+    modalInput.style.borderColor = '';
+    const newFile = { name, format: fmt, paragraphs: [], createdAt: Date.now(), updatedAt: Date.now() };
     const saved = await dbSave(newFile);
     files.push(saved);
     closeModal();
@@ -843,6 +863,15 @@ modalConfirm.addEventListener('click', async () => {
     toggleSidebar(false);
   } else {
     const f = files.find(x => x.id === renameTargetId);
+    const fmt = f ? f.format : 'txt';
+    const duplicate = files.find(x => x.name === name && x.format === fmt && x.id !== renameTargetId);
+    if (duplicate) {
+      modalInput.style.borderColor = 'var(--danger)';
+      modalInput.title = 'Файл с таким именем уже существует';
+      modalInput.focus();
+      return;
+    }
+    modalInput.style.borderColor = '';
     if (f) {
       f.name = name;
       f.updatedAt = Date.now();
@@ -853,6 +882,54 @@ modalConfirm.addEventListener('click', async () => {
       renderFileList();
     }
     closeModal();
+  }
+});
+
+// ──────────────────────────────────────────────────────
+// Backup / Import
+// ──────────────────────────────────────────────────────
+document.getElementById('btn-backup').addEventListener('click', () => {
+  if (!files.length) { alert('Нет файлов для бэкапа.'); return; }
+  const data = JSON.stringify({ version: 1, exported: Date.now(), files }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'writer_backup_' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+  setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 2000);
+});
+
+const importInput = document.getElementById('import-backup-input');
+document.getElementById('btn-import-backup').addEventListener('click', () => {
+  importInput.value = '';
+  importInput.click();
+});
+
+importInput.addEventListener('change', async () => {
+  const file = importInput.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.files || !Array.isArray(data.files)) throw new Error('Неверный формат');
+    const count = data.files.length;
+    if (!confirm('Импортировать ' + count + ' файл(ов)? Файлы с совпадающими именами будут пропущены.')) return;
+    let added = 0;
+    for (const f of data.files) {
+      const exists = files.find(x => x.name === f.name && x.format === f.format);
+      if (exists) continue;
+      const newFile = { name: f.name, format: f.format || 'txt', paragraphs: f.paragraphs || [], createdAt: f.createdAt || Date.now(), updatedAt: Date.now() };
+      delete newFile.id;
+      const saved = await dbSave(newFile);
+      files.push(saved);
+      added++;
+    }
+    renderFileList();
+    alert('Импортировано: ' + added + ' файл(ов). Пропущено: ' + (count - added) + '.');
+  } catch(e) {
+    alert('Ошибка импорта: ' + (e.message || e));
   }
 });
 
@@ -871,5 +948,6 @@ async function init() {
 
 init();
 </script>
+<input type="file" id="import-backup-input" accept=".json" style="display:none">
 </body>
 </html>
