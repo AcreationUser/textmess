@@ -136,8 +136,8 @@
 
   /* ── Topbar ── */
   #topbar {
-    padding: 8px 12px;
-    padding-top: calc(8px + var(--safe-top));
+    padding: 6px 12px;
+    padding-top: var(--safe-top);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -843,6 +843,7 @@ modalInput.addEventListener('keydown', e => { if (e.key === 'Enter') modalConfir
 modalConfirm.addEventListener('click', async () => {
   const name = modalInput.value.trim();
   if (!name) return;
+  try {
 
   if (modalMode === 'new') {
     const fmt = modalFormat;
@@ -882,6 +883,10 @@ modalConfirm.addEventListener('click', async () => {
       renderFileList();
     }
     closeModal();
+  }
+  } catch(err) {
+    console.error('Modal confirm error:', err);
+    alert('Ошибка: ' + (err.message || err));
   }
 });
 
