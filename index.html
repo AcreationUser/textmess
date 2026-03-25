@@ -431,10 +431,32 @@ const LS_KEY = 'writer_files';
 let nextId = null;
 
 function lsLoad() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { console.error('lsLoad error', e); return []; }
 }
 function lsSave(arr) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch(e) { console.error('lsSave failed', e); throw e; }
+  try {
+    const json = JSON.stringify(arr);
+    localStorage.setItem(LS_KEY, json);
+    // Verify write
+    const check = localStorage.getItem(LS_KEY);
+    if (check !== json) throw new Error('Верификация записи не прошла');
+  } catch(e) {
+    console.error('lsSave failed', e);
+    throw e;
+  }
+}
+function lsTest() {
+  try {
+    localStorage.setItem('__test__', '1');
+    const v = localStorage.getItem('__test__');
+    localStorage.removeItem('__test__');
+    return v === '1';
+  } catch { return false; }
 }
 function getNextId(arr) {
   if (nextId === null) nextId = arr.reduce((m, f) => Math.max(m, f.id || 0), 0) + 1;
@@ -734,6 +756,10 @@ async function saveFile(f) {
     await dbSave(f);
     const idx = files.findIndex(x => x.id === f.id);
     if (idx !== -1) files[idx] = f;
+    // Verify: read back and confirm paragraphs count
+    const check = lsLoad().find(x => x.id === f.id);
+    if (!check) throw new Error('Файл не найден после сохранения');
+    console.log('Saved OK:', f.name, 'paragraphs:', f.paragraphs.length, 'in LS:', check.paragraphs.length);
     saveIndicator.textContent = '✓';
     saveIndicator.classList.remove('error');
     saveIndicator.classList.add('saved');
@@ -945,8 +971,17 @@ importInput.addEventListener('change', async () => {
 // ──────────────────────────────────────────────────────
 async function init() {
   try {
+    // Test localStorage availability
+    if (!lsTest()) {
+      saveIndicator.textContent = '✕';
+      saveIndicator.classList.add('error');
+      saveIndicator.title = 'localStorage недоступен — данные не сохранятся';
+      alert('Внимание: сохранение недоступно в этом контексте. Откройте приложение через APK.');
+      return;
+    }
     await initDB();
     files = await dbGetAll();
+    console.log('Loaded files:', files.length, 'from LS key:', LS_KEY);
     renderFileList();
     if (files.length) {
       const last = [...files].sort((a,b) => b.updatedAt - a.updatedAt)[0];
@@ -956,7 +991,7 @@ async function init() {
     console.error('Init failed:', e);
     saveIndicator.textContent = '✕';
     saveIndicator.classList.add('error');
-    saveIndicator.title = 'Ошибка БД: ' + (e.message || e);
+    saveIndicator.title = 'Ошибка: ' + (e.message || e);
   }
 }
 
