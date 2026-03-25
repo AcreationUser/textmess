@@ -455,7 +455,7 @@ function initDB() {
 }
 
 function dbGetAll() {
-  if (useLS) return Promise.resolve(lsLoad());
+  if (useLS || !db) return Promise.resolve(lsLoad());
   return new Promise((res, rej) => {
     const tx = db.transaction('files', 'readonly');
     const req = tx.objectStore('files').getAll();
@@ -465,7 +465,7 @@ function dbGetAll() {
 }
 
 function dbSave(file) {
-  if (useLS) {
+  if (useLS || !db) {
     const arr = lsLoad();
     if (!file.id) file.id = Date.now() + Math.random();
     const idx = arr.findIndex(x => x.id === file.id);
@@ -482,7 +482,7 @@ function dbSave(file) {
 }
 
 function dbDelete(id) {
-  if (useLS) {
+  if (useLS || !db) {
     lsSave(lsLoad().filter(x => x.id !== id));
     return Promise.resolve();
   }
