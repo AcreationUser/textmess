@@ -136,8 +136,9 @@
 
   /* ── Topbar ── */
   #topbar {
-    padding: 10px 12px;
-    padding-top: calc(10px + var(--safe-top));
+    padding: 0 12px;
+    padding-top: var(--safe-top);
+    min-height: calc(44px + var(--safe-top));
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -750,30 +751,23 @@ btnFormat.addEventListener('click', () => {
 // ──────────────────────────────────────────────────────
 // Export
 // ──────────────────────────────────────────────────────
-btnExport.addEventListener('click', async () => {
+btnExport.addEventListener('click', () => {
   const f = files.find(x => x.id === currentFileId);
   if (!f) return;
   const text = f.paragraphs.join('\n\n');
   const filename = f.name + '.' + f.format;
-  if (navigator.share) {
-    try {
-      const file = new File([text], filename, { type: 'text/plain' });
-      await navigator.share({ files: [file], title: filename });
-    } catch(e) {
-      if (e.name !== 'AbortError') fallbackCopy(text, filename);
-    }
-  } else {
-    fallbackCopy(text, filename);
-  }
+  const mime = 'text/plain';
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.type = mime;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+  setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 2000);
 });
-
-function fallbackCopy(text, filename) {
-  navigator.clipboard.writeText(text).then(() => {
-    alert('Файл "' + filename + '" скопирован в буфер обмена.');
-  }).catch(() => {
-    alert('Экспорт недоступен. Скопируйте текст вручную.');
-  });
-}
 
 // ──────────────────────────────────────────────────────
 // Delete file
