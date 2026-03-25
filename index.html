@@ -593,8 +593,9 @@ function openFile(id) {
   currentFileName.textContent = f.name + '.' + f.format;
   currentFileName.classList.add('has-file');
   btnFormat.textContent = f.format;
-  textInput.disabled = false;
-  btnSend.disabled = false;
+  textInput.disabled = !dbReady;
+  btnSend.disabled = !dbReady;
+  btnNewFile.disabled = false;
   textInput.placeholder = 'Новый абзац…';
   renderChat(f);
   renderFileList();
@@ -756,10 +757,6 @@ async function saveFile(f) {
     await dbSave(f);
     const idx = files.findIndex(x => x.id === f.id);
     if (idx !== -1) files[idx] = f;
-    // Verify: read back and confirm paragraphs count
-    const check = lsLoad().find(x => x.id === f.id);
-    if (!check) throw new Error('Файл не найден после сохранения');
-    console.log('Saved OK:', f.name, 'paragraphs:', f.paragraphs.length, 'in LS:', check.paragraphs.length);
     saveIndicator.textContent = '✓';
     saveIndicator.classList.remove('error');
     saveIndicator.classList.add('saved');
@@ -970,28 +967,30 @@ importInput.addEventListener('change', async () => {
 // Init
 // ──────────────────────────────────────────────────────
 async function init() {
+  // Disable UI until DB ready
+  textInput.disabled = true;
+  btnSend.disabled = true;
+  btnNewFile.disabled = true;
+  saveIndicator.textContent = '…';
+
   try {
-    // Test localStorage availability
-    if (!lsTest()) {
-      saveIndicator.textContent = '✕';
-      saveIndicator.classList.add('error');
-      saveIndicator.title = 'localStorage недоступен — данные не сохранятся';
-      alert('Внимание: сохранение недоступно в этом контексте. Откройте приложение через APK.');
-      return;
-    }
     await initDB();
     files = await dbGetAll();
-    console.log('Loaded files:', files.length, 'from LS key:', LS_KEY);
     renderFileList();
     if (files.length) {
       const last = [...files].sort((a,b) => b.updatedAt - a.updatedAt)[0];
       openFile(last.id);
+    } else {
+      // Re-enable new file button even with no files
+      btnNewFile.disabled = false;
     }
+    saveIndicator.textContent = '●';
   } catch(e) {
     console.error('Init failed:', e);
     saveIndicator.textContent = '✕';
     saveIndicator.classList.add('error');
-    saveIndicator.title = 'Ошибка: ' + (e.message || e);
+    saveIndicator.title = 'Ошибка БД: ' + (e.message || e);
+    btnNewFile.disabled = false;
   }
 }
 
